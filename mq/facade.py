@@ -24,6 +24,11 @@ class QueueUser():
                 break
             except pika.exceptions.ConnectionClosed:
                 pass
+            # XXX 
+            # There is a bug in pika where the connection state isn't properly cleaned after a failed connect.
+            # This causes an IncompatibleProtocolError, so we must ignore it.
+            except pika.exceptions.IncompatibleProtocolError:
+                pass
         self.channel = self.connection.channel()
 
     def is_connected(self):
