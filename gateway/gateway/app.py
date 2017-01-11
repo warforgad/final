@@ -7,6 +7,11 @@ def client_connected():
     client_info = json.loads(request.data)
     return json.dumps(server.handle_connection(client_info))
     
+@my_app.route('/submit', methods=['POST'])
+def submit_result():
+    result = json.loads(request.data)
+    return json.dumps(server.handle_submit(result['id'], result['data']))
+    
 @my_app.route('/bar')
 def get_bar():
     return bar()
