@@ -18,7 +18,12 @@ class QueueUser():
 
     def connect(self):
         '''Connects to the MQ'''
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+        while True:
+            try:
+                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+                break
+            except pika.exceptions.ConnectionClosed:
+                pass
         self.channel = self.connection.channel()
 
     def is_connected(self):
@@ -27,9 +32,9 @@ class QueueUser():
 
 class Publisher(QueueUser):
 
-    def __init__(self, exchange):
+    def __init__(self, exchange, host):
         self.exchange = exchange
-        super().__init__()
+        super().__init__(host)
 
     def connect(self):
         '''Connects to the MQ and declares an exchange'''
@@ -42,9 +47,9 @@ class Publisher(QueueUser):
         return self.channel.basic_publish(exchange=self.exchange, routing_key='', body=msg) 
 
 class Subscriber(QueueUser):
-    def __init__(self, exchange):
+    def __init__(self, exchange, host):
         self.exchange = exchange
-        super().__init__()
+        super().__init__(host)
 
     def connect(self):
         super().connect()
