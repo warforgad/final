@@ -21,6 +21,7 @@ def test_publish():
 
 
 def test_reactor():
+    #connect
     client = {'name':'mark', 'version':'1.0'}
     r = requests.post('http://localhost:80/connect', json=client)
     assert r.status_code == 200 
@@ -28,8 +29,13 @@ def test_reactor():
     info = server.ClientInfo(client)
     assert r_data['id'] == server.generate_id(info) and r_data['command'] == 'test'
 
-    submitted = {'id' : r_data['id'], 'data':'hello'}
+    #non connected client
+    fake_submit = {'id' : 'lelelelelelelel', 'data' : 'lololololol' }
+    r = requests.post('http://localhost:80/submit', json=fake_submit)
+    assert r.status_code == 204 
 
+    #submit result and follow reactor chain
+    submitted = {'id' : r_data['id'], 'data':'hello'}
     r = requests.post('http://localhost:80/submit', json=submitted)
     assert r.status_code == 200 
     r_data = json.loads(r.text)
@@ -44,3 +50,8 @@ def test_reactor():
     assert r.status_code == 200 
     r_data = json.loads(r.text)
     assert r_data['command'] == 'sleep'
+
+    #test end of chain
+    r = requests.post('http://localhost:80/submit', json=submitted)
+    assert r.status_code == 204 
+

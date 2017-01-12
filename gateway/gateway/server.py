@@ -5,6 +5,9 @@ from shortuuid import uuid
 
 clients = {}
 
+class NonExistingClientError(Exception):
+    pass
+
 def process_client(client_info):
     for matcher in plugin.matchers:
         command = matcher(client_info)
@@ -17,8 +20,8 @@ def generate_id(data):
 def generate_connected_event(client_info):
     return 'Client {} connected!'.format(client_info.name)
 
-def send_nocontent():
-    #TODO
+def send_nocontent(client_id):
+    del clients[client_id]
     return {'command': 'sleep'}
 
 def send_command(client_id, client_info, command):
@@ -29,12 +32,11 @@ def send_next_command(client_id, client_info):
     try:
         return send_command(client_id, client_info, next(client_info.context))
     except StopIteration:
-        return send_nocontent()
+        return send_nocontent(client_id)
 
 def handle_submit(client_id, data):
     if not client_id in clients:
-        #TODO throw exception
-        pass
+        raise NonExistingClientError()
     client_info = clients[client_id]
     command = plugin.reactors[client_info.command](client_info, data)
     if command != None:
