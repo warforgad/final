@@ -7,6 +7,7 @@ python:
   - "3.5"
 install: 
     - "pip install -r requirements.txt"  
+    - "docker build -t final_base ."
 # command to run tests
 script: 
     - ./gateway/test.sh ./gateway/local.sh ./gateway/teardown.sh
