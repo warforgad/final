@@ -1,12 +1,9 @@
-from . import plugin
+from . import plugin, plugins
 from .publish import Publish
 from .clientinfo import ClientInfo
 from shortuuid import uuid
 
 clients = {}
-
-def import_plugins():
-    from . import test_plugin
 
 def process_client(client_info):
     for matcher in plugin.matchers:
