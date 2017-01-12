@@ -7,7 +7,7 @@ def matcher(client_info):
 
 @plugin.command('calc')
 def command(client_info):
-    return 'calc'
+    return {'command': 'calc', 'args': {'number': 5}}
 
 @plugin.reactor('calc')
 def reactor(client_info, data):

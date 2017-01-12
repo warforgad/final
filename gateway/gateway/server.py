@@ -1,3 +1,4 @@
+import random
 from . import plugin, plugins
 from .publish import Publish
 from .clientinfo import ClientInfo
@@ -22,10 +23,10 @@ def generate_connected_event(client_info):
 
 def send_nocontent(client_id):
     del clients[client_id]
-    return {'command': 'sleep'}
+    return {'id' : client_id, 'command': {'command': 'sleep', 'args': {'duration': random.randint(1,15)}}}
 
 def send_command(client_id, client_info, command):
-    client_info.command = command
+    client_info.command = command['command']
     return {'id' : client_id, 'command' : command}
 
 def send_next_command(client_id, client_info):

@@ -8,19 +8,19 @@ def test_matcher(client_info):
 
 @plugin.matcher
 def test_matcher2(client_info):
-    return 'foo'
+    return 'foo' 
 
 @plugin.command('test')
 def test_command(client_info):
-    return 'test'
+    return {'command': 'test', 'args':{}}
 
 @plugin.reactor('test')
 def test_reactor(client_info, data):
-    return 'foo'
+    return 'foo' 
 
 @plugin.command('foo')
 def test_command2(client_info):
-    return 'foo'
+    return {'command': 'foo', 'args':{}}
 
 @plugin.reactor('foo')
 def test_reactor2(client_info, data):
