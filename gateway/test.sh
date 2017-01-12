@@ -1,10 +1,9 @@
 #!/bin/bash
 
 SETUP=$1
-TESTS=$2
-CODE=$3
-TEARDOWN=$4
+TEARDOWN=$2
 
 $SETUP
-pytest $TESTS --cov=$CODE
+docker exec gateway_container pytest /tests --cov=/gateway
+docker exec gateway_container coveralls
 $TEARDOWN    

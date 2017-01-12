@@ -9,5 +9,4 @@ install:
     - "pip install -r requirements.txt"  
 # command to run tests
 script: 
-    - ./gateway/test.sh ./gateway/local.sh ./gateway/tests ./gateway/gateway ./gateway/teardown.sh
-after_success: coveralls
+    - ./gateway/test.sh ./gateway/local.sh ./gateway/teardown.sh
