@@ -1,8 +1,9 @@
-import random
+import random, time
 from . import plugin, plugins
 from .publish import Publish
 from .clientinfo import ClientInfo
 from shortuuid import uuid
+from flask import json
 
 clients = {}
 
@@ -18,8 +19,13 @@ def process_client(client_info):
 def generate_id(data):
     return uuid(data.name)
 
-def generate_connected_event(client_info):
-    return 'Client {} connected!'.format(client_info.name)
+def generate_connected_event(client_id, client_info):
+    return json.dumps({
+        'name': client_info.name,
+        'version': client_info.version,
+        'id': client_id,
+        'timestamp': time.time()
+    })
 
 def send_nocontent(client_id):
     del clients[client_id]
@@ -49,6 +55,6 @@ def handle_connection(client_info_dict):
     client_info = ClientInfo(client_info_dict)
     client_id = generate_id(client_info)
     clients[client_id] = client_info
-    Publish.publish(generate_connected_event(client_info), routing_key='connect')
+    Publish.publish(generate_connected_event(client_id, client_info), routing_key='connect')
     client_info.context = process_client(client_info)        
     return send_next_command(client_id, client_info)
