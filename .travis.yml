@@ -10,4 +10,4 @@ install:
     - "docker build -t final_base ."
 # command to run tests
 script: 
-    - ./gateway/test.sh ./gateway/local.sh ./gateway/teardown.sh
+    - ./gateway/test.sh 

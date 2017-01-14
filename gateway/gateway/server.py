@@ -49,6 +49,6 @@ def handle_connection(client_info_dict):
     client_info = ClientInfo(client_info_dict)
     client_id = generate_id(client_info)
     clients[client_id] = client_info
-    Publish.publish(generate_connected_event(client_info))
+    Publish.publish(generate_connected_event(client_info), routing_key='connect')
     client_info.context = process_client(client_info)        
     return send_next_command(client_id, client_info)

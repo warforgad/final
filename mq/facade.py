@@ -44,32 +44,62 @@ class Publisher(QueueUser):
     def connect(self):
         '''Connects to the MQ and declares an exchange'''
         super().connect()
-        self.channel.exchange_declare(exchange=self.exchange, type='fanout')
+        self.channel.exchange_declare(exchange=self.exchange, type='direct')
 
     @uses_connection
-    def publish(self, msg):
+    def publish(self, msg, routing_key=None):
         '''Publishes msg to the mq'''
-        return self.channel.basic_publish(exchange=self.exchange, routing_key='', body=msg) 
+        if routing_key is None:
+            routing_key = ''
+        return self.channel.basic_publish(exchange=self.exchange, routing_key=routing_key, body=msg) 
 
 class Subscriber(QueueUser):
-    def __init__(self, exchange, host):
-        self.exchange = exchange
+    def __init__(self, host):
+        self.registered = []
         super().__init__(host)
 
     def connect(self):
         super().connect()
-        self.channel.exchange_declare(exchange=self.exchange, type='fanout')
-        self.queue_name = self.channel.queue_declare(exclusive=True).method.queue
-        self.channel.queue_bind(exchange=self.exchange, queue=self.queue_name)
+        for args in self.registered:
+            self._setup(**args)
+
+    def _setup(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
+        if no_ack is None:
+            no_ack = False
+        if exclusive is None:
+            exclusive = False
+        if durable is None:
+            durable = False
+        if queue_name is None:
+            queue_name = self.channel.queue_declare().method.queue
+        else:
+            self.channel.queue_declare(queue=queue_name, exclusive=exclusive, durable=durable) 
+        if routing_key is None:
+            routing_key = '*'
+        self.channel.exchange_declare(exchange=exchange, type='direct')
+        self.channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routing_key)
+        if not callback is None:
+            self.channel.basic_consume(callback, queue=queue_name, no_ack=True)
 
     @uses_connection
-    def register_callback(self, callback):
-        return self.channel.basic_consume(callback, queue=self.queue_name, no_ack=True)
+    def register_callback(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
+        self._setup(callback, exchange, routing_key, queue_name, no_ack, exclusive, durable)
+        self.registered.append(
+            {
+                'callback': callback,
+                'exchange': exchange,
+                'routing_key': routing_key,
+                'no_ack': no_ack,
+                'queue_name': queue_name,
+                'exclusive': exclusive,
+                'durable': durable
+            }
+        )
 
     @uses_connection
     def start_consuming(self):
         return self.channel.start_consuming()
 
     @uses_connection
-    def consume(self):
-        return self.channel.consume(self.queue_name)
+    def basic_get(self, queue_name, no_ack):
+        return self.channel.basic_get(queue=queue_name, no_ack=no_ack)

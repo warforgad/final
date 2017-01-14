@@ -1,9 +1,14 @@
 #!/bin/bash
 
-SETUP=$1
-TEARDOWN=$2
+# the script's dir
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$SETUP
+# setup
+$DIR/local.sh
+# run unit tests
 docker exec gateway_container pytest /tests --cov=/gateway
 docker exec gateway_container coveralls
-$TEARDOWN    
+# run system tests
+pytest $DIR/tests/system_tests
+# teardown
+$DIR/teardown.sh

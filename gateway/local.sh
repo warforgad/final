@@ -13,7 +13,7 @@ fi
 echo "Killing old mq container..."
 docker ps -aq -f name=$MQ_CONTAINER | xargs docker rm -f
 echo "Running mq container... "
-docker run -d --name=$MQ_CONTAINER -p 5672:5672 rabbitmq
+docker run -dti --name=$MQ_CONTAINER -p 5672:5672 rabbitmq
 echo "Killing old container..."
 docker ps -aq -f name=$GATEWAY_CONTAINER | xargs docker rm -f
 echo "Building image..."
