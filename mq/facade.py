@@ -1,12 +1,14 @@
 import pika
 
 def uses_connection(decorated):
-    '''Decorator for member functions of objects with 'is_connected' and 'connect' member function.
+    '''Decorator for member functions of objects with a 'connect' member function.
     It'll attempt to reconnect and block until a connected'''
     def safe(self, *args, **kwargs):
-        while not self.is_connected():
-            self.connect()
-        return decorated(self, *args, **kwargs)
+        while True:
+            try:
+                return decorated(self, *args, **kwargs) 
+            except pika.exceptions.ConnectionClosed:
+                self.connect()
     return safe
 
 class QueueUser():
@@ -30,10 +32,6 @@ class QueueUser():
             except pika.exceptions.IncompatibleProtocolError:
                 pass
         self.channel = self.connection.channel()
-
-    def is_connected(self):
-        '''Returns True iff the connection to the queue is still active'''
-        return self.connection.is_open
 
 class Publisher(QueueUser):
 
