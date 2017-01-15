@@ -44,7 +44,7 @@ class Publisher(QueueUser):
     def connect(self):
         '''Connects to the MQ and declares an exchange'''
         super().connect()
-        self.channel.exchange_declare(exchange=self.exchange, type='direct')
+        self.channel.exchange_declare(exchange=self.exchange, type='topic')
 
     @uses_connection
     def publish(self, msg, routing_key=None):
@@ -76,7 +76,7 @@ class Subscriber(QueueUser):
             self.channel.queue_declare(queue=queue_name, exclusive=exclusive, durable=durable) 
         if routing_key is None:
             routing_key = '*'
-        self.channel.exchange_declare(exchange=exchange, type='direct')
+        self.channel.exchange_declare(exchange=exchange, type='topic')
         self.channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routing_key)
         if not callback is None:
             self.channel.basic_consume(callback, queue=queue_name, no_ack=True)
