@@ -84,6 +84,7 @@ class Subscriber(QueueUser):
 
     @uses_connection
     def register_callback(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
+        #TODO registering multiple callbacks for the same queue with different routing keys.
         self._setup(callback, exchange, routing_key, queue_name, no_ack, exclusive, durable)
         self.registered.append(
             {
