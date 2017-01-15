@@ -2,7 +2,7 @@ import json, mq, pytest, requests
 
 def test_publish():
     subscriber = mq.Subscriber('localhost')
-    subscriber.register_callback(None, 'events', queue_name='test', no_ack=True, routing_key='events.connect')
+    subscriber.register_callback(None, 'events', queue_name='test', no_ack=True, routing_key='connect')
 
     client1 = {'name':'test', 'version':'123'}
     requests.post('http://localhost:8000/connect', json=client1)

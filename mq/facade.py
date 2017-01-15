@@ -1,4 +1,4 @@
-import pika
+import json, pika
 
 def uses_connection(decorated):
     '''Decorator for member functions of objects with a 'connect' member function.
@@ -50,6 +50,9 @@ class Publisher(QueueUser):
         if routing_key is None:
             routing_key = ''
         return self.channel.basic_publish(exchange=self.exchange, routing_key=routing_key, body=msg) 
+
+    def publish_json(self, msg_dict, routing_key=None):
+        return self.publish(json.dumps(msg_dict), routing_key)
 
 class Subscriber(QueueUser):
     def __init__(self, host):
