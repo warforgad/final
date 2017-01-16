@@ -1,21 +1,28 @@
 import mq, time
+from shortuuid import uuid
 
 publisher = mq.Publisher('events', 'localhost')
 
 try:
     while True:
-        ID = 22*'a'
+        ID = uuid()
         event = {'name': 'test', 'version': 'test', 'id': ID, 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='connect')
-        event = {'id': ID, 'command': 'foo', 'timestamp': time.time()}
+
+        transaction_id = uuid()
+        event = {'id': ID, 'command': 'foo', 'transaction': transaction_id, 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='command')
-        event = {'id': ID, 'command': 'foo', 'result': 'foo', 'timestamp': time.time()}
+        event = {'transaction': transaction_id, 'result': 'foo', 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='result')
-        event = {'id': ID, 'command': 'bar', 'timestamp': time.time()}
+
+        transaction_id = uuid()
+        event = {'id': ID, 'command': 'bar', 'transaction': transaction_id, 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='command')
-        event = {'id': ID, 'command': 'bar', 'result': 'bar', 'timestamp': time.time()}
+        event = {'transaction': transaction_id, 'result': 'bar', 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='result')
-        event = {'id': ID, 'command': 'sleep', 'timestamp': time.time()}
+
+        transaction_id = uuid()
+        event = {'id': ID, 'command': 'sleep', 'transaction': transaction_id, 'timestamp': time.time()}
         publisher.publish_json(event, routing_key='command')
         time.sleep(5)
 except KeyboardInterrupt:

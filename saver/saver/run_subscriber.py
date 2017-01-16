@@ -7,7 +7,6 @@ MQ_HOST = 'mq'
 
 def handle_connection_event(channel, method, properties, body):
     event = json.loads(body.decode())
-    print(event)
     # Get or create the client
     client, created = models.Client.objects.get_or_create(
         client_name=event['name'],
@@ -21,33 +20,42 @@ def handle_connection_event(channel, method, properties, body):
         client_uuid=event['id'],
         connection_time=datetime.datetime.fromtimestamp(event['timestamp'])
     ).save()
+    channel.basic_ack(method.delivery_tag)
     
 
 def handle_command_event(channel, method, properties, body):
     event = json.loads(body.decode())
-    connections_by_uuid = models.Connection.objects.filter(client_uuid=event['id'])
-    if not connections_by_uuid.exists():
-        # TODO non existing client
-        pass
+    try:
+        connection = models.Connection.objects.get(client_uuid=event['id'])
+    except models.Connection.DoesNotExist:
+        #TODO
+        channel.basic_ack(method.delivery_tag)
+        return
+            
     models.Command(
-        client=connections_by_uuid[0].client,
+        client=connection.client,
         command=event['command'],
+        transaction_uuid=event['transaction'],
         sent_time=datetime.datetime.fromtimestamp(event['timestamp']) 
     ).save()
+    channel.basic_ack(method.delivery_tag)
 
 
 def handle_result_event(channel, method, properties, body):
     event = json.loads(body.decode())
-    connections_by_uuid = models.Connection.objects.filter(client_uuid=event['id'])
-    if not connections_by_uuid.exists():
-        # TODO non existing client
-        pass
+    try:
+        command = models.Command.objects.get(transaction_uuid=event['transaction'])
+    except models.Command.DoesNotExist:
+        #TODO
+        channel.basic_ack(method.delivery_tag)
+        return
+
     models.Result(
-        client=connections_by_uuid[0].client,
-        command=event['command'],
+        command=command,
         result=event['result'],
         received_time=datetime.datetime.fromtimestamp(event['timestamp']) 
     ).save()
+    channel.basic_ack(method.delivery_tag)
     
 def main():
     subsciber = mq.Subscriber(MQ_HOST)

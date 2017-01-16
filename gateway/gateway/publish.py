@@ -16,18 +16,18 @@ def publish_connected_event(client_info):
     }
     publisher.publish_json(msg, routing_key='connect')
    
-def publish_command(command):
+def publish_command(client_info):
     msg = {
-        'id': command['id'],
-        'command': command['command'],
+        'id': client_info.id,
+        'command': client_info.command,
+        'transaction': client_info.transaction,
         'timestamp': time.time()
     }
     publisher.publish_json(msg, routing_key='command')
 
-def publish_result(client_id, command, result):
+def publish_result(client_info, result):
     msg = {
-        'id': client_id, 
-        'command': command,
+        'transaction': client_info.transaction,
         'result': result,
         'timestamp': time.time()
     }

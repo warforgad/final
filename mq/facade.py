@@ -79,8 +79,8 @@ class Subscriber(QueueUser):
             routing_key = '*'
         self.channel.exchange_declare(exchange=exchange, type='topic')
         self.channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routing_key)
-        if not callback is None:
-            self.channel.basic_consume(callback, queue=queue_name, no_ack=True)
+        if callback is not None:
+            self.channel.basic_consume(callback, queue=queue_name, no_ack=no_ack)
 
     @uses_connection
     def register_callback(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
