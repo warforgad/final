@@ -132,6 +132,21 @@ class Subscriber(QueueUser):
         )
 
     @uses_connection
+    def register_queue(self, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
+        self._setup(None, exchange, routing_key, queue_name, no_ack, exclusive, durable)
+        self.registered.append(
+            {
+                'callback': None,
+                'exchange': exchange,
+                'routing_key': routing_key,
+                'no_ack': no_ack,
+                'queue_name': queue_name,
+                'exclusive': exclusive,
+                'durable': durable
+            }
+        )
+
+    @uses_connection
     def start_consuming(self):
         return self.channel.start_consuming()
 
