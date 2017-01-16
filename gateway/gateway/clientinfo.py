@@ -40,6 +40,8 @@ class ClientInfo:
 
     def create_nocontent(self):
         del clients[self.id]
+        self.command = 'sleep'
+        self.transaction = uuid()
         return {'command': 'sleep', 'args': {'duration': random.randint(1,15)}}
 
     def create_next_command(self):

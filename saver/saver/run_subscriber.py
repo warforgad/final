@@ -33,7 +33,7 @@ def handle_command_event(channel, method, properties, body):
         return
             
     models.Command(
-        client=connection.client,
+        connection=connection,
         command=event['command'],
         transaction_uuid=event['transaction'],
         sent_time=datetime.datetime.fromtimestamp(event['timestamp']) 
@@ -49,6 +49,10 @@ def handle_result_event(channel, method, properties, body):
         #TODO
         channel.basic_ack(method.delivery_tag)
         return
+
+    # The result could be empty
+    if event['result'] is None:
+        event['result'] = ''
 
     models.Result(
         command=command,

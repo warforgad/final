@@ -1,17 +1,19 @@
 import json, requests, time
 
 HOST='localhost'
-PORT='8000'
+PORT='9000'
 URL='http://{}:{}/'.format(HOST, PORT)
 
 def foo():
     print('foo')
+    return 'foo'
 
 def test():
     print('test')
 
 def calc(number):
     print('calc', number)
+    return number
 
 def sleep(duration):
     print('sleeping {} seconds...'.format(duration))
@@ -47,12 +49,14 @@ class Client:
                 print('Submitting result {}'.format(result))
                 self.id, command = self.submit(result)
             print('Starting over')
+            #DEBUG
+            return
         
     def do_command(self, command):
-        self.commands[command['command']](**command['args'])
         if command['command'] == 'sleep':
             print('changed')
             self.connected = False
+        return self.commands[command['command']](**command['args'])
 
     def connect(self):
         r = requests.post(URL + 'connect', json={'name':self.name, 'version':self.version})
