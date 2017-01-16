@@ -1,5 +1,37 @@
 import json, pika
 
+defaults = {
+    'exclusive': False,
+    'durable': False,
+    'no_ack': False,
+    'routing_key': '#',
+    'callback_nack_requeue': True
+}
+
+class Callback:
+    
+    def __init__(self, callback):
+        self.callback = callback
+
+    def __call__(self, channel, method, properties, body):
+        self.channel = channel
+        self.method = method
+        self.properties = properties
+        self.body = body
+        self.callback(self)
+
+    def ack(self):
+        self.channel.basic_ack(self.method.delivery_tag)
+
+    def nack(self, requeue=None):
+        if requeue is None:
+            requeue = defaults['callback_nack_requeue']
+        self.channel.basic_nack(self.method.delivery_tag)
+
+    def get_json_event(self):
+        return json.loads(self.body.decode())
+        
+
 def uses_connection(decorated):
     '''Decorator for member functions of objects with a 'connect' member function.
     It'll attempt to reconnect and block until a connected'''
@@ -66,17 +98,17 @@ class Subscriber(QueueUser):
 
     def _setup(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
         if no_ack is None:
-            no_ack = False
+            no_ack = defaults['no_ack']
         if exclusive is None:
-            exclusive = False
+            exclusive = defaults['exclusive']
         if durable is None:
-            durable = False
+            durable = defaults['durable']
+        if routing_key is None:
+            routing_key = defaults['routing_key']
         if queue_name is None:
             queue_name = self.channel.queue_declare().method.queue
         else:
             self.channel.queue_declare(queue=queue_name, exclusive=exclusive, durable=durable) 
-        if routing_key is None:
-            routing_key = '*'
         self.channel.exchange_declare(exchange=exchange, type='topic')
         self.channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routing_key)
         if callback is not None:
@@ -85,10 +117,11 @@ class Subscriber(QueueUser):
     @uses_connection
     def register_callback(self, callback, exchange, routing_key=None, queue_name=None, no_ack=None, exclusive=None, durable=None):
         #TODO registering multiple callbacks for the same queue with different routing keys.
-        self._setup(callback, exchange, routing_key, queue_name, no_ack, exclusive, durable)
+        callback_wrapper = Callback(callback)
+        self._setup(callback_wrapper, exchange, routing_key, queue_name, no_ack, exclusive, durable)
         self.registered.append(
             {
-                'callback': callback,
+                'callback': callback_wrapper,
                 'exchange': exchange,
                 'routing_key': routing_key,
                 'no_ack': no_ack,

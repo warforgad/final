@@ -17,18 +17,18 @@ class ClientConnections(generics.ListAPIView):
     serializer_class = serializers.ConnectionSerializer
 
     def filter_queryset(self, queryset):
-        return queryset.filter(client__pk=self.request.resolver_match.kwargs['client'])
+        return queryset.filter(client__pk=self.kwargs['client'])
 
 class ClientCommands(generics.ListAPIView):
     queryset = models.Command.objects.all()
     serializer_class = serializers.CommandSerializer
 
     def filter_queryset(self, queryset):
-        return queryset.filter(connection__client__pk=self.request.resolver_match.kwargs['client'])
+        return queryset.filter(connection__client__pk=self.kwargs['client'])
 
 class ClientResults(generics.ListAPIView):
     queryset = models.Result.objects.all()
     serializer_class = serializers.ResultSerializer
 
     def filter_queryset(self, queryset):
-        return queryset.filter(command__connection__client__pk=self.request.resolver_match.kwargs['client'])
+        return queryset.filter(command__connection__client__pk=self.kwargs['client'])

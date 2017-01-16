@@ -1,65 +1,67 @@
-import datetime, django, json, os
+import datetime, django, os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "saver.settings")
 django.setup()
 from subscriber import models, mq
 
 MQ_HOST = 'mq'
 
-def handle_connection_event(channel, method, properties, body):
-    event = json.loads(body.decode())
-    # Get or create the client
-    client, created = models.Client.objects.get_or_create(
-        client_name=event['name'],
-        client_version=event['version'],
-        defaults={'created_time': datetime.datetime.fromtimestamp(event['timestamp'])}
-    )
-        
-    # Add connection
-    models.Connection(
-        client=client,
-        client_uuid=event['id'],
-        connection_time=datetime.datetime.fromtimestamp(event['timestamp'])
-    ).save()
-    channel.basic_ack(method.delivery_tag)
-    
-
-def handle_command_event(channel, method, properties, body):
-    event = json.loads(body.decode())
+def handle_connection_event(event):
     try:
-        connection = models.Connection.objects.get(client_uuid=event['id'])
+        event_data = event.get_json_event()
+        # Get or create the client
+        client, created = models.Client.objects.get_or_create(
+            client_name=event_data['name'],
+            client_version=event_data['version'],
+            defaults={'created_time': datetime.datetime.fromtimestamp(event_data['timestamp'])}
+        )
+            
+        # Add connection
+        models.Connection(
+            client=client,
+            client_uuid=event_data['id'],
+            connection_time=datetime.datetime.fromtimestamp(event_data['timestamp'])
+        ).save()
+        event.ack() 
+    except Exception:
+        event.nack()
+
+def handle_command_event(event):
+    event_data = event.get_json_event()
+    try:
+        connection = models.Connection.objects.get(client_uuid=event_data['id'])
+        models.Command(
+            connection=connection,
+            command=event_data['command'],
+            transaction_uuid=event_data['transaction'],
+            sent_time=datetime.datetime.fromtimestamp(event_data['timestamp']) 
+        ).save()
+        event.ack()
     except models.Connection.DoesNotExist:
         #TODO
-        channel.basic_ack(method.delivery_tag)
-        return
-            
-    models.Command(
-        connection=connection,
-        command=event['command'],
-        transaction_uuid=event['transaction'],
-        sent_time=datetime.datetime.fromtimestamp(event['timestamp']) 
-    ).save()
-    channel.basic_ack(method.delivery_tag)
+        event.ack()
+    except Exception:
+        event.nack()
 
 
-def handle_result_event(channel, method, properties, body):
-    event = json.loads(body.decode())
+def handle_result_event(event):
+    event_data = event.get_json_event()
     try:
-        command = models.Command.objects.get(transaction_uuid=event['transaction'])
+        command = models.Command.objects.get(transaction_uuid=event_data['transaction'])
+
+        # The result could be empty
+        if event_data['result'] is None:
+            event_data['result'] = ''
+
+        models.Result(
+            command=command,
+            result=event_data['result'],
+            received_time=datetime.datetime.fromtimestamp(event_data['timestamp']) 
+        ).save()
     except models.Command.DoesNotExist:
         #TODO
-        channel.basic_ack(method.delivery_tag)
-        return
-
-    # The result could be empty
-    if event['result'] is None:
-        event['result'] = ''
-
-    models.Result(
-        command=command,
-        result=event['result'],
-        received_time=datetime.datetime.fromtimestamp(event['timestamp']) 
-    ).save()
-    channel.basic_ack(method.delivery_tag)
+        event.ack()
+    except Exception:
+        event.nack()
     
 def main():
     subsciber = mq.Subscriber(MQ_HOST)
