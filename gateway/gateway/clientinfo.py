@@ -1,8 +1,17 @@
-import random
+import json, random
 from shortuuid import uuid
-from . import plugin, plugins
+from . import plugin, plugins, redisdict, sockettransfer
 
-clients = {}
+def encode_data(client_info):
+    return json.dumps(client_info.__dict__).encode()
+    
+def decode_data(json_info):
+    tmp = ClientInfo({'name':'', 'version':''}, '')
+    tmp.__dict__.update(**json.loads(json_info.decode()))
+    return tmp
+
+TRANSFER_PORT = 9000
+clients = redisdict.RedisDict(sockettransfer.SocketTransferer(TRANSFER_PORT), encode_data, decode_data)
 
 class ClientInfo:
     
@@ -16,7 +25,7 @@ class ClientInfo:
 
     @staticmethod
     def from_id(client_id):
-        return clients.get(client_id)
+        return clients[client_id]
 
     @classmethod
     def new_client(cls, info_dict):
@@ -26,10 +35,7 @@ class ClientInfo:
         return client
 
     def generate_context(self):
-        for matcher in plugin.matchers:
-            command = matcher(self)
-            if command is not None:
-                yield plugin.commands[command](self)
+        return list(plugin.matchers.keys())
 
     def create_command(self, command):
         if command is None:
@@ -45,7 +51,13 @@ class ClientInfo:
         return {'command': 'sleep', 'args': {'duration': random.randint(1,15)}}
 
     def create_next_command(self):
-        return self.create_command(next(self.context, None))
+        while True:
+            if len(self.context) == 0:
+                return None
+            next_matcher = self.context.pop()
+            next_command = plugin.matchers[next_matcher](self)
+            if next_command is not None:
+                return self.create_command(plugin.commands[next_command](self))
 
     def process_result(self, result):
         command = plugin.reactors[self.command](self, result)
@@ -53,4 +65,5 @@ class ClientInfo:
             return self.create_command(plugin.commands[command](self))
         else:
             return self.create_next_command()
+
             

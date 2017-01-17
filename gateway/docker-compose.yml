@@ -1,0 +1,36 @@
+version: "2"
+
+services:
+  gateway1:
+    build: .
+    links:
+    - mq
+    - redis
+    ports:
+    - 80
+  gateway2:
+    build: .
+    links:
+    - mq
+    - redis
+    ports:
+    - 80
+  mq:
+    image: rabbitmq
+    ports:
+    - 5672:5672
+  redis:
+    image: redis
+    ports:
+    - "6379:6379"
+    volumes:
+    - ./redis-data:/data
+  lb:
+    image: haproxy
+    links:
+    - gateway1
+    - gateway2
+    ports:
+    - 8000:80
+    volumes:
+    - ./haproxy:/usr/local/etc/haproxy

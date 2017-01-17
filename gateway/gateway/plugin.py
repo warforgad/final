@@ -1,10 +1,14 @@
-matchers = []
+matchers = {}
 commands = {}
 reactors = {}
 
-def matcher(decorated):
-    matchers.append(decorated)
-    return decorated
+def matcher(name):
+    def matcher_decorator(decorated):
+        if name in matchers:
+            raise ValueError('There is already a matcher named {}!'.format(name))
+        matchers[name] = decorated
+        return decorated
+    return matcher_decorator
 
 def command(name):
     def command_decorator(decorated):
